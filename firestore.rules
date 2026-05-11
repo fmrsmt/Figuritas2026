@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { 
+      return request.auth != null && request.auth.token.email_verified == true; 
+    }
+    
+    // Album Validation
+    function isValidAlbum(data) {
+      return data.keys().hasAll(['stickers', 'packsOpened', 'totalSpent', 'userId', 'updatedAt']) 
+        && data.keys().size() == 5
+        && data.stickers is map
+        && data.packsOpened is number && data.packsOpened >= 0
+        && data.totalSpent is number && data.totalSpent >= 0
+        && data.userId == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+
+    // Trade Log Validation
+    function isValidTradeLog(data) {
+      return data.keys().hasAll(['userId', 'givenIds', 'receivedIds', 'createdAt'])
+        && data.keys().size() == 4
+        && data.userId == request.auth.uid
+        && data.givenIds is list && data.givenIds.size() <= 100
+        && data.receivedIds is list && data.receivedIds.size() <= 100
+        && data.createdAt == request.time;
+    }
+
+    match /albums/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      
+      allow create: if isSignedIn() 
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidAlbum(incoming());
+
+      allow update: if isSignedIn() 
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidAlbum(incoming())
+        && incoming().userId == existing().userId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['stickers', 'packsOpened', 'totalSpent', 'updatedAt']);
+      
+      match /tradeLogs/{logId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+
+        // Creating a tradelog modifies the parent album
+        allow create: if isSignedIn()
+          && isValidId(userId)
+          && request.auth.uid == userId
+          && isValidId(logId)
+          && isValidTradeLog(incoming())
+          && exists(/databases/$(database)/documents/albums/$(userId));
+      }
+    }
+  }
+}

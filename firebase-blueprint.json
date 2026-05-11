@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "Album": {
+      "title": "User Album",
+      "description": "Represents a user's sticker album and statistics",
+      "type": "object",
+      "properties": {
+        "stickers": { "type": "object" },
+        "packsOpened": { "type": "number" },
+        "totalSpent": { "type": "number" },
+        "userId": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["stickers", "packsOpened", "totalSpent", "userId", "updatedAt"]
+    },
+    "TradeLog": {
+      "title": "Trade Log",
+      "description": "Record of a trade",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "givenIds": { "type": "array", "items": { "type": "string" } },
+        "receivedIds": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "givenIds", "receivedIds", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/albums/{userId}": {
+      "schema": { "$ref": "Album" },
+      "description": "Stores user's album stats and all stickers"
+    },
+    "/albums/{userId}/tradeLogs/{logId}": {
+      "schema": { "$ref": "TradeLog" },
+      "description": "Logs of all trades for a user"
+    }
+  }
+}
