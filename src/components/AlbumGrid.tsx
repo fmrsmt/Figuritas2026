@@ -13,7 +13,7 @@ export function AlbumGrid({
 }) {
   
   const [deleteMode, setDeleteMode] = React.useState(false);
-  const [viewOnly, setViewOnly] = React.useState(false);
+  const [viewOnly, setViewOnly] = React.useState(true);
   
   // Calculate max columns (0 to 20 = 21 columns max)
   const maxCols = 21;
