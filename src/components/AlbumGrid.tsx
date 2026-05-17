@@ -4,16 +4,22 @@ import { StickersRecord } from '../hooks/useAlbumState';
 
 export function AlbumGrid({ 
   stickers, 
+  stickerNames,
   onAddSticker, 
-  onRemoveSticker 
+  onRemoveSticker,
+  onNameChange
 }: { 
   stickers: StickersRecord,
+  stickerNames: Record<string, string>,
   onAddSticker: (id: string) => void,
-  onRemoveSticker: (id: string) => void
+  onRemoveSticker: (id: string) => void,
+  onNameChange: (id: string, name: string) => void
 }) {
   
   const [deleteMode, setDeleteMode] = React.useState(false);
   const [viewOnly, setViewOnly] = React.useState(true);
+  const [editingNameStickerId, setEditingNameStickerId] = React.useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = React.useState('');
   
   // Calculate max columns (0 to 20 = 21 columns max)
   const maxCols = 21;
@@ -28,8 +34,45 @@ export function AlbumGrid({
     return `Grupo ${String.fromCharCode(65 + groupIndex)}`; // 65 is 'A'
   };
 
+  const handleContextMenu = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    setEditingNameStickerId(id);
+    setEditingNameValue(stickerNames[id] || '');
+  };
+
+  const handleSaveName = () => {
+    if (editingNameStickerId) {
+       onNameChange(editingNameStickerId, editingNameValue);
+       setEditingNameStickerId(null);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow overflow-hidden relative">
+       {/* Name Editing Modal */}
+       {editingNameStickerId && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+             <div className="bg-white p-6 rounded shadow-xl max-w-sm w-full mx-4">
+                <h3 className="text-lg font-bold mb-4">Nombrar figurita: {editingNameStickerId}</h3>
+                <input 
+                   type="text"
+                   autoFocus
+                   value={editingNameValue}
+                   onChange={e => setEditingNameValue(e.target.value)}
+                   className="w-full border border-gray-300 p-2 rounded mb-4"
+                   placeholder="Nombre del jugador / objeto..."
+                   onKeyDown={e => {
+                      if (e.key === 'Enter') handleSaveName();
+                      if (e.key === 'Escape') setEditingNameStickerId(null);
+                   }}
+                />
+                <div className="flex justify-end gap-2">
+                   <button onClick={() => setEditingNameStickerId(null)} className="px-4 py-2 bg-gray-200 rounded">Cancelar</button>
+                   <button onClick={handleSaveName} className="px-4 py-2 bg-blue-600 text-white font-bold rounded">Guardar</button>
+                </div>
+             </div>
+          </div>
+       )}
        <div className="p-4 border-b border-gray-200">
          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
             <h2 className="text-xl font-bold text-gray-800">Grilla del Álbum</h2>
@@ -121,7 +164,12 @@ export function AlbumGrid({
                                 onAddSticker(id);
                             }
                          }}
-                         title={viewOnly ? `Cantidad: ${count}` : `Click para ${deleteMode ? 'restar' : 'sumar'} (Shift+Click en PC también resta). Actualmente: ${count}`}
+                         onContextMenu={(e) => handleContextMenu(e, id)}
+                         title={
+                           (stickerNames[id] ? `${stickerNames[id]} | ` : '') + 
+                           (viewOnly ? `Cantidad: ${count}` : `Click para ${deleteMode ? 'restar' : 'sumar'} (Shift+Click en PC también resta). Actualmente: ${count}`) +
+                           ` | Click derecho para nombrar`
+                         }
                        >
                          {count === 0 ? "NO" : count}
                        </td>

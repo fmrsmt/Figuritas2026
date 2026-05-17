@@ -7,6 +7,7 @@ export type StickersRecord = Record<string, number>;
 
 interface AlbumData {
   stickers: StickersRecord;
+  stickerNames: Record<string, string>;
   packsOpened: number;
   totalSpent: number;
 }
@@ -26,12 +27,12 @@ const computeDerivedStats = (stickers: StickersRecord) => {
 
 export function useAlbumState() {
   const { user } = useAuth();
-  const [data, setData] = useState<AlbumData>({ stickers: {}, packsOpened: 0, totalSpent: 0 });
+  const [data, setData] = useState<AlbumData>({ stickers: {}, stickerNames: {}, packsOpened: 0, totalSpent: 0 });
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
     if (!user) {
-      setData({ stickers: {}, packsOpened: 0, totalSpent: 0 });
+      setData({ stickers: {}, stickerNames: {}, packsOpened: 0, totalSpent: 0 });
       setIsLoadingData(false);
       return;
     }
@@ -45,6 +46,7 @@ export function useAlbumState() {
         const derived = computeDerivedStats(d.stickers || {});
         setData({
           stickers: d.stickers || {},
+          stickerNames: d.stickerNames || {},
           packsOpened: derived.packsOpened,
           totalSpent: derived.totalSpent,
         });
@@ -52,6 +54,7 @@ export function useAlbumState() {
         // Initialize if not exists
         setDoc(albumRef, {
           stickers: {},
+          stickerNames: {},
           packsOpened: 0,
           totalSpent: 0,
           userId: user.uid,
@@ -114,6 +117,26 @@ export function useAlbumState() {
     updateFirestore({});
   };
 
+  const updateStickerName = async (id: string, name: string) => {
+    if (!user) return;
+    const newNames = { ...data.stickerNames };
+    if (!name.trim()) {
+       newNames[id] = deleteField() as any;
+    } else {
+       newNames[id] = name.trim();
+    }
+    
+    // We update eagerly in local state or let onSnapshot do it? Let onSnapshot handle it, but we can do a direct setDoc
+    try {
+      await setDoc(doc(db, 'albums', user.uid), {
+        stickerNames: newNames,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch (error) {
+       handleFirestoreError(error, OperationType.UPDATE, `albums/${user.uid}`);
+    }
+  };
+
   const executeTrade = async (givenIds: string[], receivedIds: string[]) => {
     if (!user) return;
     const newStickers = { ...data.stickers };
@@ -166,6 +189,7 @@ export function useAlbumState() {
 
   return {
     stickers: data.stickers,
+    stickerNames: data.stickerNames,
     packsOpened: data.packsOpened,
     totalSpent: data.totalSpent,
     isLoadingData,
@@ -173,6 +197,7 @@ export function useAlbumState() {
     removeSticker,
     addPack,
     executeTrade,
-    resetAlbum
+    resetAlbum,
+    updateStickerName
   };
 }

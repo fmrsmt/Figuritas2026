@@ -11,7 +11,7 @@ import { LoginScreen } from './components/LoginScreen';
 
 export default function App() {
   const { user, loading, logOut } = useAuth();
-  const { stickers, packsOpened, totalSpent, addSticker, removeSticker, addPack, executeTrade, isLoadingData } = useAlbumState();
+  const { stickers, stickerNames, packsOpened, totalSpent, addSticker, removeSticker, addPack, executeTrade, isLoadingData, updateStickerName } = useAlbumState();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'grid' | 'add' | 'lists' | 'trades'>('dashboard');
 
   if (loading) {
@@ -87,9 +87,11 @@ export default function App() {
 
         {activeTab === 'grid' && (
           <AlbumGrid 
-            stickers={stickers} 
+            stickers={stickers}
+            stickerNames={stickerNames}
             onAddSticker={(id) => addSticker(id, 1)} 
             onRemoveSticker={(id) => removeSticker(id, 1)} 
+            onNameChange={updateStickerName}
           />
         )}
 
@@ -98,7 +100,7 @@ export default function App() {
         )}
 
         {activeTab === 'lists' && (
-          <Lists stickers={stickers} />
+          <Lists stickers={stickers} stickerNames={stickerNames} />
         )}
 
         {activeTab === 'trades' && (
