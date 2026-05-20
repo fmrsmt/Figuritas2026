@@ -70,17 +70,30 @@ export function useAlbumState() {
     return () => unsubscribe();
   }, [user]);
 
-  const updateFirestore = async (newStickers: StickersRecord) => {
+  const updateFirestoreWithLog = async (newStickers: StickersRecord, logType: 'add' | 'remove' | 'pack', details: any) => {
     if (!user) return;
     const derived = computeDerivedStats(newStickers);
     try {
-      await setDoc(doc(db, 'albums', user.uid), {
+      const batch = writeBatch(db);
+      const albumRef = doc(db, 'albums', user.uid);
+      
+      batch.set(albumRef, {
         stickers: newStickers,
         packsOpened: derived.packsOpened,
         totalSpent: derived.totalSpent,
         userId: user.uid,
         updatedAt: serverTimestamp()
       }, { merge: true });
+
+      const logRef = doc(collection(db, 'albums', user.uid, 'activityLogs'));
+      batch.set(logRef, {
+        userId: user.uid,
+        type: logType,
+        createdAt: serverTimestamp(),
+        ...details
+      });
+
+      await batch.commit();
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `albums/${user.uid}`);
     }
@@ -90,7 +103,7 @@ export function useAlbumState() {
     const current = data.stickers[id] || 0;
     const newStickers = { ...data.stickers };
     newStickers[id] = current + count;
-    updateFirestore(newStickers);
+    updateFirestoreWithLog(newStickers, 'add', { stickerId: id, count });
   };
 
   const removeSticker = (id: string, count: number = 1) => {
@@ -102,19 +115,36 @@ export function useAlbumState() {
     } else {
       newStickers[id] = newCount;
     }
-    updateFirestore(newStickers);
+    updateFirestoreWithLog(newStickers, 'remove', { stickerId: id, count });
   };
 
   const addPack = (stickerIds: string[]) => {
     const newStickers = { ...data.stickers };
+
+    const newIds: string[] = [];
+    const repeatedIds: string[] = [];
+
     stickerIds.forEach((id) => {
+      if (!newStickers[id] || newStickers[id] === 0) {
+        newIds.push(id);
+      } else {
+        repeatedIds.push(id);
+      }
       newStickers[id] = (newStickers[id] || 0) + 1;
     });
-    updateFirestore(newStickers);
+
+    updateFirestoreWithLog(newStickers, 'pack', { stickerIds, newIds, repeatedIds });
   };
 
   const resetAlbum = () => {
-    updateFirestore({});
+    if (!user) return;
+    setDoc(doc(db, 'albums', user.uid), {
+         stickers: {},
+         packsOpened: 0,
+         totalSpent: 0,
+         userId: user.uid,
+         updatedAt: serverTimestamp()
+    }, { merge: true }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `albums/${user.uid}`));
   };
 
   const updateStickerName = async (id: string, name: string) => {
@@ -173,9 +203,10 @@ export function useAlbumState() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      const logRef = doc(collection(db, 'albums', user.uid, 'tradeLogs'));
+      const logRef = doc(collection(db, 'albums', user.uid, 'activityLogs'));
       batch.set(logRef, {
         userId: user.uid,
+        type: 'trade',
         givenIds,
         receivedIds,
         createdAt: serverTimestamp()

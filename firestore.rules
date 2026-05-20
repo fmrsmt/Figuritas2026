@@ -29,12 +29,10 @@ service cloud.firestore {
     }
 
     // Trade Log Validation
-    function isValidTradeLog(data) {
-      return data.keys().hasAll(['userId', 'givenIds', 'receivedIds', 'createdAt'])
-        && data.keys().size() == 4
+    function isValidActivityLog(data) {
+      return data.keys().hasAll(['userId', 'type', 'createdAt'])
         && data.userId == request.auth.uid
-        && data.givenIds is list && data.givenIds.size() <= 100
-        && data.receivedIds is list && data.receivedIds.size() <= 100
+        && data.type in ['trade', 'pack', 'add', 'remove']
         && data.createdAt == request.time;
     }
 
@@ -54,15 +52,17 @@ service cloud.firestore {
         && incoming().diff(existing()).affectedKeys().hasOnly(['stickers', 'stickerNames', 'packsOpened', 'totalSpent', 'updatedAt']);
       
       match /tradeLogs/{logId} {
-        allow read: if isSignedIn() && request.auth.uid == userId;
-        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow read, list: if isSignedIn() && request.auth.uid == userId;
+      }
 
-        // Creating a tradelog modifies the parent album
+      match /activityLogs/{logId} {
+        allow read, list: if isSignedIn() && request.auth.uid == userId;
+
         allow create: if isSignedIn()
           && isValidId(userId)
           && request.auth.uid == userId
           && isValidId(logId)
-          && isValidTradeLog(incoming())
+          && isValidActivityLog(incoming())
           && exists(/databases/$(database)/documents/albums/$(userId));
       }
     }

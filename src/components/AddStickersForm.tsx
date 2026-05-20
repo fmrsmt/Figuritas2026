@@ -122,15 +122,24 @@ export function AddStickersForm({
             </button>
             <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">¡Sobre Abierto!</h2>
             
-            <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg mb-4">
-               <div className="text-center">
+            <div className="flex justify-between items-start bg-gray-50 p-3 rounded-lg mb-4">
+               <div className="text-center flex-1 pr-2 border-r border-gray-300">
                  <div className="text-xl font-bold text-green-600">{summary.newStickers.length}</div>
-                 <div className="text-xs text-gray-500 uppercase tracking-tighter">Nuevas</div>
+                 <div className="text-xs text-gray-500 uppercase tracking-tighter mb-2">Nuevas</div>
+                 <div className="flex flex-wrap gap-1 justify-center">
+                   {summary.newStickers.map((id, i) => (
+                     <span key={i} className="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded border border-green-200">{id}</span>
+                   ))}
+                 </div>
                </div>
-               <div className="w-px h-8 bg-gray-300"></div>
-               <div className="text-center">
+               <div className="text-center flex-1 pl-2">
                  <div className="text-xl font-bold text-blue-600">{summary.repeatedStickers.length}</div>
-                 <div className="text-xs text-gray-500 uppercase tracking-tighter">Repetidas</div>
+                 <div className="text-xs text-gray-500 uppercase tracking-tighter mb-2">Repetidas</div>
+                 <div className="flex flex-wrap gap-1 justify-center">
+                   {summary.repeatedStickers.map((id, i) => (
+                     <span key={i} className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded border border-blue-200">{id}</span>
+                   ))}
+                 </div>
                </div>
             </div>
 
