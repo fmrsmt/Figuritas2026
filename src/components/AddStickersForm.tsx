@@ -11,11 +11,13 @@ interface PackSummary {
 export function AddStickersForm({ 
   onAddSingle, 
   onAddPack,
-  stickers
+  stickers,
+  stickerNames = {}
 }: { 
   onAddSingle: (id: string, count: number) => void,
   onAddPack: (ids: string[]) => void,
-  stickers: StickersRecord
+  stickers: StickersRecord,
+  stickerNames?: Record<string, string>
 }) {
   const [singleCode, setSingleCode] = useState('');
   
@@ -23,15 +25,23 @@ export function AddStickersForm({
   const [packCodes, setPackCodes] = useState(['', '', '', '', '', '', '']);
   const [summary, setSummary] = useState<PackSummary | null>(null);
 
+  const resolveCodeOrName = (input: string): string | null => {
+    const lower = input.trim().toLowerCase();
+    for (const [id, name] of Object.entries(stickerNames)) {
+      if (name && name.toLowerCase() === lower) return id;
+    }
+    return parseStickerCode(input);
+  };
+
   const handleSingleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const id = parseStickerCode(singleCode);
+    const id = resolveCodeOrName(singleCode);
     if (id) {
       onAddSingle(id, 1);
       setSingleCode('');
       // Show success somehow if needed, or simple toast
     } else {
-      alert("Código inválido. Usa formatos como 'ARG 10' o 'arg10'.");
+      alert("Código o nombre inválido. Usa formatos como 'ARG 10' o el nombre guardado.");
     }
   };
 
@@ -78,7 +88,7 @@ export function AddStickersForm({
 
     for (const code of packCodes) {
       if (code.trim() === '') continue;
-      const id = parseStickerCode(code);
+      const id = resolveCodeOrName(code);
       if (id) {
         parsedIds.push(id);
         if (tempStickers[id]) {

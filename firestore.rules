@@ -18,10 +18,9 @@ service cloud.firestore {
     
     // Album Validation
     function isValidAlbum(data) {
-      return data.keys().hasAll(['stickers', 'stickerNames', 'packsOpened', 'totalSpent', 'userId', 'updatedAt']) 
-        && data.keys().size() == 6
+      return data.keys().hasAll(['stickers', 'packsOpened', 'totalSpent', 'userId', 'updatedAt']) 
         && data.stickers is map
-        && data.stickerNames is map
+        && (!('stickerNames' in data) || data.stickerNames is map)
         && data.packsOpened is number && data.packsOpened >= 0
         && data.totalSpent is number && data.totalSpent >= 0
         && data.userId == request.auth.uid
@@ -49,7 +48,7 @@ service cloud.firestore {
         && request.auth.uid == userId
         && isValidAlbum(incoming())
         && incoming().userId == existing().userId
-        && incoming().diff(existing()).affectedKeys().hasOnly(['stickers', 'stickerNames', 'packsOpened', 'totalSpent', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly(['stickers', 'stickerNames', 'packsOpened', 'totalSpent', 'updatedAt', 'userId']);
       
       match /tradeLogs/{logId} {
         allow read, list: if isSignedIn() && request.auth.uid == userId;

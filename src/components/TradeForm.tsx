@@ -1,15 +1,37 @@
 import React, { useState } from 'react';
 import { parseStickerCode } from '../data/albumData';
 
-export function TradeForm({ onExecuteTrade }: { onExecuteTrade: (givenIds: string[], receivedIds: string[]) => void }) {
+export function TradeForm({ 
+  onExecuteTrade,
+  stickerNames = {}
+}: { 
+  onExecuteTrade: (givenIds: string[], receivedIds: string[]) => void;
+  stickerNames?: Record<string, string>;
+}) {
   const [givenText, setGivenText] = useState('');
   const [receivedText, setReceivedText] = useState('');
 
   const parseCodesList = (text: string): string[] => {
-    // splits by newline, comma, space, and remove empty
-    const rawItems = text.split(/[\n,\s]+/).filter(item => item.trim() !== '');
+    // splits by newline, comma, and remove empty
+    const rawItems = text.split(/[\n,]+/).map(item => item.trim()).filter(item => item !== '');
     const codes: string[] = [];
+    
+    // Reverse map for case-insensitive lookup
+    const nameToIdMap: Record<string, string> = {};
+    Object.entries(stickerNames).forEach(([id, name]) => {
+      if (name) {
+        nameToIdMap[name.trim().toLowerCase()] = id;
+      }
+    });
+
     for (const item of rawItems) {
+      const lowerItem = item.toLowerCase();
+      if (nameToIdMap[lowerItem]) {
+        codes.push(nameToIdMap[lowerItem]);
+        continue;
+      }
+
+      // If not a known name, try parsing as a regular sticker code
       const parsed = parseStickerCode(item);
       if (parsed) {
         codes.push(parsed);

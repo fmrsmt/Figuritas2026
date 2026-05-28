@@ -81,7 +81,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <Dashboard stickers={stickers} packsOpened={packsOpened} totalSpent={totalSpent} />
-            <AddStickersForm onAddSingle={addSticker} onAddPack={addPack} stickers={stickers} />
+            <AddStickersForm onAddSingle={addSticker} onAddPack={addPack} stickers={stickers} stickerNames={stickerNames} />
           </div>
         )}
 
@@ -96,7 +96,7 @@ export default function App() {
         )}
 
         {activeTab === 'add' && (
-          <AddStickersForm onAddSingle={addSticker} onAddPack={addPack} stickers={stickers} />
+          <AddStickersForm onAddSingle={addSticker} onAddPack={addPack} stickers={stickers} stickerNames={stickerNames} />
         )}
 
         {activeTab === 'lists' && (
@@ -105,7 +105,7 @@ export default function App() {
 
         {activeTab === 'trades' && (
           <div className="space-y-6">
-            <TradeForm onExecuteTrade={executeTrade} />
+            <TradeForm onExecuteTrade={executeTrade} stickerNames={stickerNames} />
             <TradeLogList />
           </div>
         )}
